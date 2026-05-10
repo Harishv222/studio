@@ -1,7 +1,12 @@
--- Supabase Schema for Studio Website (Final Version)
+-- Supabase Schema for Studio Website (Clean Reset Version)
 
--- 1. Bookings Table
-create table if not exists bookings (
+-- 1. Drop existing tables to start fresh
+drop table if exists bookings cascade;
+drop table if exists contacts cascade;
+drop table if exists profiles cascade;
+
+-- 2. Create Bookings Table with ALL columns
+create table bookings (
   id uuid default gen_random_uuid() primary key,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   name text not null,
@@ -12,12 +17,8 @@ create table if not exists bookings (
   status text default 'pending'
 );
 
--- Ensure columns exist if table was created earlier
-alter table bookings add column if not exists message text;
-alter table bookings add column if not exists status text default 'pending';
-
--- 2. Contacts Table
-create table if not exists contacts (
+-- 3. Create Contacts Table
+create table contacts (
   id uuid default gen_random_uuid() primary key,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   name text not null,
@@ -25,35 +26,30 @@ create table if not exists contacts (
   message text not null
 );
 
--- 3. Public Profiles Table
-create table if not exists profiles (
+-- 4. Create Public Profiles Table
+create table profiles (
   id uuid references auth.users on delete cascade primary key,
   full_name text,
   email text,
   updated_at timestamp with time zone default now()
 );
 
--- 4. Row Level Security (RLS)
+-- 5. Enable Row Level Security (RLS)
 alter table bookings enable row level security;
 alter table contacts enable row level security;
 alter table profiles enable row level security;
 
 -- Policies for Bookings
-drop policy if exists "Allow public inserts for bookings" on bookings;
 create policy "Allow public inserts for bookings" on bookings for insert with check (true);
 
 -- Policies for Contacts
-drop policy if exists "Allow public inserts for contacts" on contacts;
 create policy "Allow public inserts for contacts" on contacts for insert with check (true);
 
 -- Policies for Profiles
-drop policy if exists "Public profiles are viewable by everyone." on profiles;
 create policy "Public profiles are viewable by everyone." on profiles for select using (true);
-
-drop policy if exists "Users can insert their own profile." on profiles;
 create policy "Users can insert their own profile." on profiles for insert with check (auth.uid() = id);
 
--- 5. Profile Sync Trigger (Auth -> Public Profiles)
+-- 6. Profile Sync Trigger (Auth -> Public Profiles)
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
