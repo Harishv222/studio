@@ -14,6 +14,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -24,10 +25,30 @@ export default function Contact() {
     message: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    alert("Thank you! Your inquiry has been sent.");
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.from("contacts").insert([
+        {
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+        },
+      ]);
+
+      if (error) throw error;
+
+      alert("Thank you! Your message has been sent.");
+      setFormData({ name: "", email: "", date: "", service: "Photography", message: "" });
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -181,9 +202,10 @@ export default function Contact() {
 
                 <button 
                   type="submit"
-                  className="w-full py-5 bg-gold text-black font-bold uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-3"
+                  disabled={loading}
+                  className="w-full py-5 bg-gold text-black font-bold uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
-                  Send Inquiry <Send size={18} />
+                  {loading ? "Sending..." : <>Send Inquiry <Send size={18} /></>}
                 </button>
               </form>
             </div>

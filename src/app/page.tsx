@@ -45,7 +45,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <Link
-                href="/contact"
+                href="/book"
                 className="px-8 py-4 bg-gold text-black font-bold uppercase tracking-widest hover:bg-white transition-all transform hover:scale-105 w-full sm:w-auto"
               >
                 Book Now

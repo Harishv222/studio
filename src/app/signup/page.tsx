@@ -1,11 +1,50 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { Camera, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Camera, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { supabase } from "@/lib/supabase";
 
 export default function Signup() {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const router = useRouter();
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      setSuccess(true);
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
+    } catch (err: any) {
+      setError(err.message || "An error occurred during signup");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-black text-white flex items-center justify-center p-6 relative overflow-hidden">
       {/* Animated Background Elements */}
@@ -31,13 +70,28 @@ export default function Signup() {
         <div className="glass p-8 md:p-10 rounded-sm border-white/10 shadow-2xl relative">
           <div className="absolute top-0 right-0 w-full h-[2px] bg-gold opacity-50" />
           
-          <form className="space-y-4">
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs uppercase tracking-widest font-bold">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-6 p-4 bg-gold/10 border border-gold/20 text-gold text-xs uppercase tracking-widest font-bold">
+              Account created successfully! Redirecting to login...
+            </div>
+          )}
+
+          <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest font-bold text-white/50">Full Name</label>
               <div className="relative">
                 <User className="absolute left-4 top-4 text-white/30" size={18} />
                 <input 
                   type="text" 
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   placeholder="John Doe"
                   className="w-full bg-black/40 border border-white/10 pl-12 pr-4 py-4 focus:border-gold outline-none transition-colors rounded-sm"
                 />
@@ -50,6 +104,9 @@ export default function Signup() {
                 <Mail className="absolute left-4 top-4 text-white/30" size={18} />
                 <input 
                   type="email" 
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
                   className="w-full bg-black/40 border border-white/10 pl-12 pr-4 py-4 focus:border-gold outline-none transition-colors rounded-sm"
                 />
@@ -62,6 +119,9 @@ export default function Signup() {
                 <Lock className="absolute left-4 top-4 text-white/30" size={18} />
                 <input 
                   type="password" 
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full bg-black/40 border border-white/10 pl-12 pr-4 py-4 focus:border-gold outline-none transition-colors rounded-sm"
                 />
@@ -71,9 +131,10 @@ export default function Signup() {
             <div className="pt-4">
               <button 
                 type="submit"
-                className="w-full py-5 bg-gold text-black font-bold uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-3 shadow-lg shadow-gold/20"
+                disabled={loading || success}
+                className="w-full py-5 bg-gold text-black font-bold uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-3 shadow-lg shadow-gold/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Account <ArrowRight size={18} />
+                {loading ? <Loader2 className="animate-spin" /> : <>Create Account <ArrowRight size={18} /></>}
               </button>
             </div>
           </form>

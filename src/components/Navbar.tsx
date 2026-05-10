@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Camera } from "lucide-react";
+import { Menu, X, Camera, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -18,15 +19,37 @@ const navLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    // Check Auth State
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      authListener.subscription.unsubscribe();
+    };
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   return (
     <nav
@@ -57,12 +80,29 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
-          <Link
-            href="/login"
-            className="px-6 py-2 bg-gold text-black text-sm font-bold uppercase tracking-widest hover:bg-gold/90 transition-colors rounded-sm"
-          >
-            Login
-          </Link>
+          
+          {user ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-gold text-xs font-bold uppercase tracking-widest">
+                <User size={16} />
+                <span className="max-w-[100px] truncate">{user.email.split('@')[0]}</span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-white/50 hover:text-white transition-colors"
+                title="Logout"
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="px-6 py-2 bg-gold text-black text-sm font-bold uppercase tracking-widest hover:bg-gold/90 transition-colors rounded-sm"
+            >
+              Login
+            </Link>
+          )}
         </div>
 
         {/* Mobile Toggle */}
@@ -96,13 +136,25 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
-            <Link
-              href="/login"
-              onClick={() => setIsOpen(false)}
-              className="mt-2 w-full py-3 bg-gold text-black text-center font-bold uppercase tracking-widest"
-            >
-              Login
-            </Link>
+            {user ? (
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsOpen(false);
+                }}
+                className="mt-2 w-full py-3 bg-red-500/20 text-red-500 border border-red-500/20 text-center font-bold uppercase tracking-widest"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setIsOpen(false)}
+                className="mt-2 w-full py-3 bg-gold text-black text-center font-bold uppercase tracking-widest"
+              >
+                Login
+              </Link>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
