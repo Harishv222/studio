@@ -85,7 +85,7 @@ const Navbar = () => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-gold text-xs font-bold uppercase tracking-widest">
                 <User size={16} />
-                <span className="max-w-[100px] truncate">{user.email.split('@')[0]}</span>
+                <span className="max-w-[100px] truncate">{user.email?.split('@')[0] || "User"}</span>
               </div>
               <button
                 onClick={handleLogout}

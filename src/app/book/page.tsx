@@ -39,7 +39,7 @@ export default function Book() {
       }
       setUser(user);
       if (user?.email) {
-        setFormData(prev => ({ ...prev, email: user.email }));
+        setFormData(prev => ({ ...prev, email: user.email || "" }));
       }
     };
     checkUser();
